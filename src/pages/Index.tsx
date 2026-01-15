@@ -1,10 +1,14 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { Header } from '@/components/Header';
 import { BottomNav } from '@/components/BottomNav';
+import { LoginView } from '@/components/LoginView';
+import { MetricsDashboard } from '@/components/MetricsDashboard';
 import { DashboardView } from '@/components/DashboardView';
 import { AnalyzingView } from '@/components/AnalyzingView';
 import { DecisionView } from '@/components/DecisionView';
 import { SuccessView } from '@/components/SuccessView';
+import { ActivityView } from '@/components/ActivityView';
+import { WalletView } from '@/components/WalletView';
 import type { AppView, Invoice, AgentDecision, Transaction, AnalysisStep } from '@/types/invoice';
 
 const mockInvoice: Invoice = {
@@ -38,18 +42,19 @@ const initialSteps: AnalysisStep[] = [
   { id: '3', title: 'Scanning risk parameters', status: 'pending', detail: 'WAITING' },
 ];
 
-const headerTitles: Record<AppView, string> = {
-  dashboard: 'AutoOps',
-  analyzing: 'AutoOps',
-  decision: 'Agent Decision',
-  success: 'Transaction Details',
-};
+type MainTab = 'home' | 'activity' | 'vault' | 'settings';
 
 const Index = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [activeTab, setActiveTab] = useState<MainTab>('home');
   const [view, setView] = useState<AppView>('dashboard');
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [showUpload, setShowUpload] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [steps, setSteps] = useState<AnalysisStep[]>(initialSteps);
+
+  const handleLogin = useCallback(() => {
+    setIsLoggedIn(true);
+  }, []);
 
   const handleFileSelect = useCallback((file: File) => {
     setSelectedFile(file);
@@ -60,7 +65,6 @@ const Index = () => {
     setView('analyzing');
     setSteps(initialSteps);
     
-    // Simulate analysis steps
     const delays = [800, 1600, 2400];
     const details = ['SUCCESS • 12MS', 'VERIFIED • 0 DISCREPANCIES', 'IN PROGRESS • TIER 1'];
     
@@ -74,7 +78,6 @@ const Index = () => {
       }, delay);
     });
 
-    // Move to decision after analysis
     setTimeout(() => {
       setSteps(prev => prev.map((step, i) => ({
         ...step,
@@ -91,61 +94,117 @@ const Index = () => {
 
   const handleBackToDashboard = useCallback(() => {
     setView('dashboard');
+    setShowUpload(false);
     setSelectedFile(null);
     setSteps(initialSteps);
   }, []);
 
   const handleBack = useCallback(() => {
-    if (view === 'decision') setView('dashboard');
-    else if (view === 'success') setView('decision');
-    else if (view === 'analyzing') setView('dashboard');
+    if (view === 'decision') {
+      setView('dashboard');
+      setShowUpload(false);
+    } else if (view === 'success') {
+      setView('decision');
+    } else if (view === 'analyzing') {
+      setView('dashboard');
+      setShowUpload(false);
+    }
   }, [view]);
 
-  const showBack = view !== 'dashboard';
+  const handleTabChange = useCallback((tab: string) => {
+    setActiveTab(tab as MainTab);
+    setView('dashboard');
+    setShowUpload(false);
+    setSelectedFile(null);
+  }, []);
+
+  // Show login if not logged in
+  if (!isLoggedIn) {
+    return <LoginView onLogin={handleLogin} />;
+  }
+
+  const getHeaderTitle = () => {
+    if (activeTab === 'activity') return 'Invoice Activity';
+    if (activeTab === 'vault') return 'Treasury Wallet';
+    if (activeTab === 'settings') return 'Settings';
+    if (view === 'decision') return 'Agent Decision';
+    if (view === 'success') return 'Transaction Details';
+    return 'AutoOps';
+  };
+
+  const showBack = view !== 'dashboard' || showUpload;
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <Header 
-        title={headerTitles[view]} 
-        showBack={showBack} 
-        onBack={handleBack} 
-      />
+      {activeTab === 'home' && !showUpload && view === 'dashboard' ? null : (
+        <Header 
+          title={getHeaderTitle()} 
+          showBack={showBack} 
+          onBack={showUpload ? () => setShowUpload(false) : handleBack} 
+        />
+      )}
       
       <main className="px-4 py-6 max-w-md mx-auto">
-        {view === 'dashboard' && (
-          <DashboardView
-            onFileSelect={handleFileSelect}
-            onAnalyze={handleAnalyze}
-            hasFile={!!selectedFile}
-            fileName={selectedFile?.name}
-          />
+        {activeTab === 'home' && (
+          <>
+            {view === 'dashboard' && !showUpload && (
+              <MetricsDashboard onUploadClick={() => setShowUpload(true)} />
+            )}
+            
+            {view === 'dashboard' && showUpload && (
+              <DashboardView
+                onFileSelect={handleFileSelect}
+                onAnalyze={handleAnalyze}
+                hasFile={!!selectedFile}
+                fileName={selectedFile?.name}
+              />
+            )}
+            
+            {view === 'analyzing' && (
+              <AnalyzingView 
+                steps={steps} 
+                onIntervene={() => {
+                  setView('dashboard');
+                  setShowUpload(false);
+                }} 
+              />
+            )}
+            
+            {view === 'decision' && (
+              <DecisionView
+                invoice={mockInvoice}
+                decision={mockDecision}
+                onApprove={handleApprove}
+                onReview={() => {}}
+              />
+            )}
+            
+            {view === 'success' && (
+              <SuccessView
+                transaction={mockTransaction}
+                onBackToDashboard={handleBackToDashboard}
+              />
+            )}
+          </>
         )}
-        
-        {view === 'analyzing' && (
-          <AnalyzingView 
-            steps={steps} 
-            onIntervene={() => setView('dashboard')} 
-          />
+
+        {activeTab === 'activity' && (
+          <ActivityView />
         )}
-        
-        {view === 'decision' && (
-          <DecisionView
-            invoice={mockInvoice}
-            decision={mockDecision}
-            onApprove={handleApprove}
-            onReview={() => {}}
-          />
+
+        {activeTab === 'vault' && (
+          <WalletView />
         )}
-        
-        {view === 'success' && (
-          <SuccessView
-            transaction={mockTransaction}
-            onBackToDashboard={handleBackToDashboard}
-          />
+
+        {activeTab === 'settings' && (
+          <div className="text-center py-12">
+            <h2 className="text-xl font-display font-semibold text-foreground mb-2">Settings</h2>
+            <p className="text-muted-foreground">Coming soon</p>
+          </div>
         )}
       </main>
 
-      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+      <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
     </div>
   );
 };

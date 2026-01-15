@@ -1,4 +1,4 @@
-import { LayoutDashboard, Wallet, History, Settings } from 'lucide-react';
+import { Home, BarChart2, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface BottomNavProps {
@@ -7,10 +7,19 @@ interface BottomNavProps {
 }
 
 const navItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'wallet', label: 'Wallet', icon: Wallet },
-  { id: 'activity', label: 'Activity', icon: History },
-  { id: 'settings', label: 'Settings', icon: Settings },
+  { id: 'home', label: 'HOME', icon: Home },
+  { id: 'activity', label: 'ACTIVITY', icon: BarChart2 },
+  { 
+    id: 'vault', 
+    label: 'VAULT', 
+    icon: () => (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <rect x="4" y="4" width="16" height="16" rx="2"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+    )
+  },
+  { id: 'settings', label: 'SETTINGS', icon: Settings },
 ];
 
 export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
