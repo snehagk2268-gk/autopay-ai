@@ -9,6 +9,7 @@ import { DecisionView } from '@/components/DecisionView';
 import { SuccessView } from '@/components/SuccessView';
 import { ActivityView } from '@/components/ActivityView';
 import { WalletView } from '@/components/WalletView';
+import { SettingsView } from '@/components/SettingsView';
 import type { AppView, Invoice, AgentDecision, Transaction, AnalysisStep } from '@/types/invoice';
 
 const mockInvoice: Invoice = {
@@ -42,7 +43,7 @@ const initialSteps: AnalysisStep[] = [
   { id: '3', title: 'Scanning risk parameters', status: 'pending', detail: 'WAITING' },
 ];
 
-type MainTab = 'home' | 'activity' | 'vault' | 'settings';
+type MainTab = 'home' | 'activity' | 'wallet' | 'settings';
 
 const Index = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -125,8 +126,8 @@ const Index = () => {
 
   const getHeaderTitle = () => {
     if (activeTab === 'activity') return 'Invoice Activity';
-    if (activeTab === 'vault') return 'Treasury Wallet';
-    if (activeTab === 'settings') return 'Settings';
+    if (activeTab === 'wallet') return 'Treasury Wallet';
+    if (activeTab === 'settings') return 'Agent Settings';
     if (view === 'decision') return 'Agent Decision';
     if (view === 'success') return 'Transaction Details';
     return 'AutoOps';
@@ -192,15 +193,12 @@ const Index = () => {
           <ActivityView />
         )}
 
-        {activeTab === 'vault' && (
+        {activeTab === 'wallet' && (
           <WalletView />
         )}
 
         {activeTab === 'settings' && (
-          <div className="text-center py-12">
-            <h2 className="text-xl font-display font-semibold text-foreground mb-2">Settings</h2>
-            <p className="text-muted-foreground">Coming soon</p>
-          </div>
+          <SettingsView />
         )}
       </main>
 
